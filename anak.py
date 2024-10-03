@@ -315,7 +315,13 @@ def get_inbox(id_order,tokens):
                 print(f"Failed to get data. Status code: {response.status_code}. Retrying...")
                 time.sleep(5)
     elif providers == 2:
+        start_time = time.time()
+        timeout_duration = 2 * 60
         while True:
+            elapsed_time = time.time() - start_time
+            if elapsed_time > timeout_duration:
+                print("Timeout reached. No SMS received within 2 minutes.")
+                return False, 0
             url = 'https://wnrstore.com/api/v1/order/data'
             headers = {
                 'Authorization': f'Bearer {tokens}'
@@ -450,7 +456,8 @@ def main():
         print("==========================================================")
         fake_iphone_user_agent = random.choice(iphone_user_agents)
         print(fake_iphone_user_agent)
-        driver = Driver(uc=True,proxy="socks5://qvucvxh.localto.net:1128",agent=fake_iphone_user_agent)
+        # driver = Driver(uc=True,proxy="socks5://qvucvxh.localto.net:1128",agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36")
+        driver = Driver(uc=True,agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36")
         driver.delete_all_cookies()
         max_retries = 5
         attempt = 0
