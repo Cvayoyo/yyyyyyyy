@@ -169,6 +169,77 @@ iphone_user_agents = [
     "Mozilla/5.0 (iPhone; CPU iPhone OS 1_1 like Mac OS X) AppleWebKit/528.16 (KHTML, like Gecko) Version/1.1.1 Mobile/5B150 Safari/528.16",
     "Mozilla/5.0 (iPhone; CPU iPhone OS 1_0 like Mac OS X) AppleWebKit/528.16 (KHTML, like Gecko) Version/1.0.1 Mobile/5A290 Safari/528.16",
 ]
+def login(email,password):
+    max_retries = 5
+    attempt = 0
+    
+    while attempt <= max_retries:
+        driver.get('https://myaccount.google.com/security')
+        print("Login Email...")
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > c-wiz > div > div:nth-child(2) > div > c-wiz > c-wiz > div > div.s7iwrf.gMPiLc.Kdcijb > div > div > c-wiz > section > div > div > div > div > div > div > header > div.m6CL9 > div'))).click()
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.NAME, 'identifier'))).send_keys(email)
+        print("Email : "+email)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#identifierNext > div > button'))).click()
+        try:
+            WebDriverWait(driver, 7).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#password > div.aCsJod.oJeWuf > div > div.Xb9hP > input'))).send_keys(password)
+            print("Password : "+password+"\n===================================")
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#passwordNext > div > button'))).click()
+            return True
+        except:
+            print("Captcha Require, Next Email...\n======================================")
+            attempt += 1
+            if attempt > max_retries:
+                print("Max login attempts reached. Moving to the next email.")
+                return False
+                
+def loqout():
+    driver.get('https://accounts.google.com/SignOutOptions?hl=en&continue=https://myaccount.google.com/security&ec=GBRAwAE')
+    time.sleep(2)
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#signout'))).click()
+
+def change_password():
+    while True:
+        try:
+            driver.get('https://myaccount.google.com/signinoptions/password')
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#i6'))).send_keys('123456tujuh@')
+            time.sleep(1)
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#i12'))).send_keys('123456tujuh@')
+            time.sleep(1)
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > c-wiz > div > div:nth-child(2) > div:nth-child(2) > c-wiz > div > div.VfPpkd-WsjYwc.VfPpkd-WsjYwc-OWXEXe-INsAgc.KC1dQ.Usd1Ac.AaN0Dd.F2KCCe.NkyfNe.Z2xVec.E2bpG.injfOc > form > div > div.GFJYae.lY6Rwe > div > div > button'))).click()
+            return True
+        except:
+            return False
+
+def prom():
+    print("Disable Prompts Android")
+    try:
+        driver.get('https://myaccount.google.com/connections/settings')
+        ele = WebDriverWait(driver,5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > c-wiz > div > div:nth-child(2) > div:nth-child(2) > c-wiz > div > div.Z54xyc > div > div > div > div > ul > li:nth-child(1) > div > div.kvjuQc.biRLo > div > button')))
+        if ele.get_attribute('aria-checked') == "true":
+            print("Status : Active")
+            ele.click()
+            print("Trying Disable Prompts...")
+        else:
+            print("Status : Disable")
+        return True
+    except Exception as e:
+        print(e)
+        print("Function Prompts Error")
+
+def family():
+    driver.get("https://myaccount.google.com/family/details?hl=en_US")
+    for i in range(3,8):
+        href_links.append(WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, f'#yDmH0d > c-wiz > div > div:nth-child(2) > div:nth-child(2) > c-wiz > c-wiz > div > div.s7iwrf.gMPiLc > div > div > c-wiz > section > div:nth-child(1) > div > div > div:nth-child({str(i)}) > div.VfPpkd-ksKsZd-XxIAqe.CmhoVd.I6g62c > a'))).get_attribute('href').split('/g/')[-1])
+    print(href_links)
+    for i in range(len(href_links)):
+        driver.get(f"https://families.google.com/familylink/kids/{str(href_links[i])}/settings/thirdpartyapps?webview=true&hideNavBar=true&hl=en_US")
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > c-wiz.zQTmif.SSPGKf > div > div.M4P19c > div.jz7BQc > div > main > section > c-wiz > div > div:nth-child(2) > div'))).click()
+        time.sleep(1)
+    for i in range(len(href_links)):
+        driver.get(f"https://myaccount.google.com/family/member/g/{str(href_links[i])}?hl=en_US")
+        mail_list.append(WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > c-wiz > div > div:nth-child(2) > div:nth-child(2) > c-wiz > div > div.VfPpkd-WsjYwc.VfPpkd-WsjYwc-OWXEXe-INsAgc.KC1dQ.Usd1Ac.AaN0Dd.F2KCCe.NkyfNe.HYI7Re.Z2xVec.E2bpG.injfOc > div > div > div > div > div > p:nth-child(2)'))).text)
+        time.sleep(0.5)
+    print(mail_list)
 
 def change_status(status_id, order_idst):
     if providers == 0:
@@ -254,6 +325,7 @@ def get_phone(tokens, layanans):
             if response_data['success']:
                 data = response_data['data']
                 return 0, data
+            time.sleep(2)
 
 def get_inbox(id_order, tokens):
     if providers == 1:
@@ -275,7 +347,6 @@ def get_inbox(id_order, tokens):
                         if sms_data:
                             sms_data.sort(key=lambda x: datetime.strptime(x["date"], '%Y-%m-%d %H:%M:%S'), reverse=True)
                             latest_sms = sms_data[0]["sms"]
-                            print(f"Latest SMS: {latest_sms}")
                             otp = re.search(r'\b\d{6}\b', latest_sms)
                             if otp:
                                 return True, otp.group()
@@ -303,12 +374,8 @@ def get_inbox(id_order, tokens):
                     if data_content.get('status') == '3':
                         otp_message = data_content.get('inbox')
                         change_status(2, id_order)
-                        sys.stdout.write(f"\rotp: {otp_message}\n")
-                        sys.stdout.flush()
                         return True, otp_message
                     else:
-                        sys.stdout.write("\rRetive OTP")
-                        sys.stdout.flush()
                         time.sleep(1)
                 else:
                     print("Response status is not 'success'. Retrying...")
@@ -354,7 +421,6 @@ def cancel_order(id_order):
 def get_balance():
     if providers == 1:
         while True:
-            print(api)
             response = requests.get(f'https://tokoclaude.com/api/get-profile/{api}', timeout=20)
             if response.status_code == 201:
                 data = response.json()
@@ -399,7 +465,7 @@ def get_balance():
 
 def wait_and_click(driver, css_selector):
     try:
-        element = WebDriverWait(driver, 10).until(  # Menunggu elemen sampai muncul (default 10 detik)
+        element = WebDriverWait(driver, 60).until(  # Menunggu elemen sampai muncul (default 10 detik)
             EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector))
         )
         element.click()  # Klik elemen setelah valid
@@ -408,7 +474,7 @@ def wait_and_click(driver, css_selector):
 
 def wait_and_send(driver, css_selector, action):
     try:
-        element = WebDriverWait(driver, 10).until(  # Menunggu elemen sampai muncul (default 10 detik)
+        element = WebDriverWait(driver, 60).until(  # Menunggu elemen sampai muncul (default 10 detik)
             EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector))
         )
         element.send_keys(action)  # Kirim input setelah valid
@@ -463,11 +529,12 @@ def main():
                 print(fake_iphone_user_agent)
                 driver = Driver(
                     uc=True,
-                    proxy="socks5://x0nlmff.localto.net:8236",
-                    agent=fake_iphone_user_agent,
-                    extension_dir="proxy_auth_extension"
+                    proxy="socks5://x0nlmff.localto.net:1359",
+                    agent=fake_iphone_user_agent
+                    # extension_dir="proxy_auth_extension"
                 )
                 driver.delete_all_cookies()
+                
                 driver.get('https://myaccount.google.com/security')
                 WebDriverWait(driver, 5).until(
                     EC.presence_of_element_located(
@@ -499,9 +566,9 @@ def main():
                 WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, '#birthdaygenderNext > div > button'))
                 ).click()
-                time.sleep(3)
-                email = f"{fake.first_name()}{fake.last_name()}{str(random.randint(1, 10000000))}"
-                print(f"email: {email}@gmail.com")
+                time.sleep(5)
+                email_ortu = f"{fake.first_name()}{fake.last_name()}{str(random.randint(1, 10000000))}"
+                print(f"email: {email_ortu}@gmail.com")
                 try:
                     WebDriverWait(driver, 5).until(
                         EC.presence_of_element_located(
@@ -509,7 +576,7 @@ def main():
                         )
                     ).click()
                     timr.sleep(1)
-                    wait_and_send(driver, '#yDmH0d > c-wiz > div > div.UXFQgc > div > div > div > form > span > section > div > div > div.BvCjxe > div.AFTWye > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input', email)
+                    wait_and_send(driver, '#yDmH0d > c-wiz > div > div.UXFQgc > div > div > div > form > span > section > div > div > div.BvCjxe > div.AFTWye > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input', email_ortu)
                     wait_and_click(driver, "#next > div > button")
                 except:
                     xops = "ffggg"
@@ -518,7 +585,7 @@ def main():
                         EC.presence_of_element_located(
                             (By.CSS_SELECTOR, '#yDmH0d > c-wiz > div > div.UXFQgc > div > div > div > form > span > section > div > div > div > div.AFTWye > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input')
                         )
-                    ).send_keys(email)
+                    ).send_keys(email_ortu)
                     wait_and_click(driver, '#next > div > button')
                 except:
                     sj = "yeah"
@@ -526,7 +593,7 @@ def main():
                 wait_and_send(driver, '#passwd > div.aCsJod.oJeWuf > div > div.Xb9hP > input', '123456tujuh')
                 wait_and_send(driver, '#confirm-passwd > div.aCsJod.oJeWuf > div > div.Xb9hP > input', '123456tujuh')
                 wait_and_click(driver, '#createpasswordNext > div > button')
-                time.sleep(3)
+                time.sleep(5)
                 while True:
                     try:
                         WebDriverWait(driver, 10).until(
@@ -569,7 +636,8 @@ def main():
                     if otp_code_2 == otp_code:
                         status_otp, otp_code = get_inbox(order_id, token)
                     else:
-                        status_otp, otp_code_2 = get_inbox(order_id,token)
+                        if providers != 0 and providers != 2:
+                            status_otp, otp_code_2 = get_inbox(order_id,token)
                         break
                 if not status_otp:
                     if providers == 1:
@@ -582,8 +650,9 @@ def main():
                     order_id =None
                 else:
                     try:
+                        print(f"otp_code: {otp_code}")
                         wait_and_send(driver, '#code', otp_code)
-                        time.sleep(3)
+                        time.sleep(2)
                         wait_and_click(driver, '#next > div > button')
                         time.sleep(3)
                         wait_and_click(driver, "#recoverySkip > div > button")
@@ -592,25 +661,22 @@ def main():
                         time.sleep(3)
                         wait_and_click(driver, "#yDmH0d > c-wiz > div > div.JYXaTc.lUWEgd > div > div.TNTaPb > div > div > button")
                         time.sleep(15)
-                        # order_id = None
-                        # phone_number = None
-                        # otp_code = None
-                        # otp_code_2 = None
                         print("done")
                         with open('new_account.txt', 'a') as result_file:
-                            result_file.write(email + '@gmail.com\n')
+                            result_file.write(email_ortu + '@gmail.com\n')
                         inc += 1
                     except:
                         ksoo = 0 
                 time.sleep(3)
                 driver.get("https://myaccount.google.com/signinoptions/recoveryoptions?opendialog=collectphone")
-                time.sleep(3)
+                time.sleep(5)
                 if phone_number == None:
                     order_id, phone_number = get_phone(token,layanan_str)
                 wait_and_send(driver, "#c6", phone_number)
                 time.sleep(1)
                 WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.VfPpkd-Sx9Kwc.cC1eCc.UDxLd.PzCPDd.iteLLc.VfPpkd-Sx9Kwc-OWXEXe-FNFY6c > div.VfPpkd-wzTsW > div > div.VfPpkd-T0kwCb > div > div > button'))).click()
                 time.sleep(3)
+                
                 max_loop = 10
                 h_done = False
                 inc = 0
@@ -637,7 +703,7 @@ def main():
                         select = Select(dropdown_element)
                         select.select_by_value(random_value)
                         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#birthdaygenderNext > div > button'))).click()
-                        time.sleep(3)
+                        time.sleep(5)
                         try:
                             email = f"{fake.first_name()}{fake.last_name()}{str(random.randint(1, 10000000))}"
                             print(f"{email}@gmail.com")
@@ -649,10 +715,11 @@ def main():
                                 wait_and_click(driver, "#next > div > button")
                             except:
                                 xops = "ffggg"
+                        time.sleep(5)
                         wait_and_send(driver, '#password > div.aCsJod.oJeWuf > div > div.Xb9hP > input', '123456tujuh')
                         link_anak = driver.current_url
                         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#createpasswordNext > div > button'))).click()
-                        time.sleep(3)
+                        time.sleep(5)
                         while True:
                             try:
                                 WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#phoneNumberId'))).clear()
@@ -685,6 +752,7 @@ def main():
                                     time.sleep(7)
                                 except:
                                     status_otp, otp_code = get_inbox(order_id,token)
+                                    print(f"otp_code: {otp_code}")
                                     while True : 
                                         if otp_code_2 == otp_code  :
                                             status_otp, otp_code = get_inbox(order_id,token)
@@ -739,27 +807,47 @@ def main():
                                                         status_otp, otp_code_2 = get_inbox(order_id,token)
                                                     else :
                                                         break 
-                                                
+                                                if not status_otp:
+                                                    if providers == 1:
+                                                        status_cancel = cancel_order(order_id)
+                                                        print(status_cancel)
+                                                    elif providers == 0:
+                                                        change_status(0, order_id)
+                                                    print("Can't Get OTP Code Loop Use New Number")
+                                                    max_loop = max_loop + 1
+                                                    driver.get("https://myaccount.google.com/signinoptions/recoveryoptions?opendialog=collectphone")
+                                                    order_id, phone_number = get_phone(token,layanan_str)
+                                                    wait_and_send(driver, "#c6", phone_number)
+                                                    try:
+                                                        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.uW2Fw-Sx9Kwc.uW2Fw-Sx9Kwc-OWXEXe-n2to0e.iteLLc.uW2Fw-Sx9Kwc-OWXEXe-FNFY6c > div.uW2Fw-wzTsW > div > div.uW2Fw-T0kwCb > div.qsqhnc > div > button'))).click()
+                                                    except:
+                                                        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.VfPpkd-Sx9Kwc.cC1eCc.UDxLd.PzCPDd.iteLLc.VfPpkd-Sx9Kwc-OWXEXe-FNFY6c > div.VfPpkd-wzTsW > div > div.VfPpkd-T0kwCb > div > div > button'))).click()
+                                                    break    
                                                 wait_and_send(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section > div > div > div > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input", otp_code_2)
                                                 time.sleep(1)
                                                 wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.zQJV3 > div > div.qhFLie > div > div > button")
                                                 time.sleep(10)
                                                 inc = inc + 1
+                                                
 
                                             except :
+                                                
                                                 h_done = True
                                                 break
                                         except:
+                                            
                                             slos = 0
                                     except:
+                                        
                                         print("otp salah")
                                         input("Done")
                                 break
                             except:
                                 print("Number not found")
-                                status_otp, otp_code = get_inbox(order_id,token)
+                                if providers != 0 and providers != 2:
+                                    status_otp, otp_code = get_inbox(order_id,token)
                                 try:
-                                    time.sleep(1)
+                                    time.sleep(3)
                                     wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section:nth-child(7) > div > div > div:nth-child(2) > div.ci67pc > div")
                                     wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section:nth-child(7) > div > div > div:nth-child(1) > div.ci67pc > div")
                                     wait_and_click(driver, "#dnpPage-next > div > button")
@@ -768,13 +856,13 @@ def main():
                                     slos = 0
                                 try:
                                     wait_and_send(driver, "#password > div.aCsJod.oJeWuf > div > div.Xb9hP > input", "123456tujuh")
-                                    time.sleep(1)
+                                    time.sleep(3)
                                     wait_and_click(driver, "#passwordNext > div > button")
                                     time.sleep(3)
                                     wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.zQJV3 > div > div > div > div > button")
-                                    time.sleep(2)
+                                    time.sleep(3)
                                     wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section > div > div > div > ul > li:nth-child(1) > div")
-                                    time.sleep(2)
+                                    time.sleep(3)
                                     wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.zQJV3 > div > div.qhFLie > div > div > button")
                                     time.sleep(8)
                                     try : 
@@ -786,29 +874,68 @@ def main():
                                                 status_otp, otp_code_2 = get_inbox(order_id,token)
                                             else :
                                                 break 
-                                        
+                                        if not status_otp:
+                                            if providers == 1:
+                                                status_cancel = cancel_order(order_id)
+                                                print(status_cancel)
+                                            elif providers == 0:
+                                                change_status(0, order_id)
+                                            print("Can't Get OTP Code Loop Use New Number")
+                                            max_loop = max_loop + 1
+                                            driver.get("https://myaccount.google.com/signinoptions/recoveryoptions?opendialog=collectphone")
+                                            order_id, phone_number = get_phone(token,layanan_str)
+                                            wait_and_send(driver, "#c6", phone_number)
+                                            try:
+                                                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.uW2Fw-Sx9Kwc.uW2Fw-Sx9Kwc-OWXEXe-n2to0e.iteLLc.uW2Fw-Sx9Kwc-OWXEXe-FNFY6c > div.uW2Fw-wzTsW > div > div.uW2Fw-T0kwCb > div.qsqhnc > div > button'))).click()
+                                            except:
+                                                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.VfPpkd-Sx9Kwc.cC1eCc.UDxLd.PzCPDd.iteLLc.VfPpkd-Sx9Kwc-OWXEXe-FNFY6c > div.VfPpkd-wzTsW > div > div.VfPpkd-T0kwCb > div > div > button'))).click()
+                                            break
+                                        print(f"otp_code: {otp_code_2}")
                                         wait_and_send(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section > div > div > div > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input", otp_code_2)
                                         time.sleep(1)
                                         wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.zQJV3 > div > div.qhFLie > div > div > button")
                                         time.sleep(10)
                                         inc = inc + 1
+                                        
 
                                     except :
+                                        
                                         h_done = True
                                         break
                                 except:
+                                    
                                     slos = 0
                                 max_loop = max_loop + 1
                                 break
                     except:
+                        
                         print("reload")
                 driver.quit()
+                return email_ortu
                 break
-
-
             except:
                 driver.quit()
                 print("Try Reopen Chrome...")
 
-if choser == 1 or choser == "1":
-    main()
+while True:
+    if choser == 1 or choser == "1":
+        email_ortu_ret = main()
+    href_links = []
+    mail_list = []
+    driver = Driver(uc=True)
+    if login(email_ortu_ret, "123456tujuh"):
+        time.sleep(1)
+        prom()
+        time.sleep(2)
+        # mail_reco = recovery_email()
+        family()
+        for i in range(len(mail_list)):
+            with open('result_anak.txt', 'a') as result_file:
+                result_file.write(f"{mail_list[i]}|{email_ortu_ret}@gmail.com\n")
+        with open('result_ortu.txt', 'a') as result_file:
+            result_file.write(f"{email_ortu_ret}@gmail.com|123456tujuh\n")
+        change_password()
+        time.sleep(2)
+        loqout()
+        time.sleep(2)
+        driver.quit()
