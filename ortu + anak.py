@@ -15,11 +15,11 @@ import time, random, requests, csv, string, json, re, sys,os
 from faker import Faker
 from datetime import datetime
 from fake_useragent import UserAgent
-
+from smsactivate.api import SMSActivateAPI
 with open('data/api.txt', 'r') as file:
     lines = file.readlines()
-choser = int(input("1. Ortu + 5 anak\nChoose:"))
-providers = int(input("==========================================================\n0 = Siotp\n1 = tokoclaude\n2 = wnrstore\nPilih: "))
+choser = int(1)
+providers = int(input("==========================================================\n0 = Siotp\n1 = tokoclaude\n2 = wnrstore\n3 = smsactive\nPilih: "))
 if providers == 0:
     api = lines[0].strip()
 elif providers == 1:
@@ -28,7 +28,10 @@ elif providers == 2:
     api = lines[2].strip()
     email_wnr = lines[3].strip()
     password_wnr = lines[4].strip()
-
+elif providers == 3:
+    api = lines[5].strip()
+    sa = SMSActivateAPI(api)
+    sa.debug_mode = False
 headers = {
     'accept': 'application/json',
     'Content-Type': 'application/json'
@@ -326,7 +329,21 @@ def get_phone(tokens, layanans):
                 data = response_data['data']
                 return 0, data
             time.sleep(2)
-
+    elif providers == 3:
+        while True:
+            if layanans == "Old":
+                rent = sa.getRentList()
+                try:
+                    return rent['values']['0']['id'] , rent['values']['0']['phone']
+                except:
+                    print(rent['message'])
+            else:
+                rent = sa.getRentNumber(service='go', time=4, operator='any', country=6)
+                try:
+                    return rent['phone']['id'] , rent['phone']['number']
+                except:
+                    print(rent['message'])
+                
 def get_inbox(id_order, tokens):
     if providers == 1:
         url = f'https://tokoclaude.com/api/get-orders/{api}/{id_order}'
@@ -412,6 +429,15 @@ def get_inbox(id_order, tokens):
             else:
                 print("Request gagal")
 
+    elif providers == 3:
+        while True:
+            status = sa.getRentStatus(id_order)
+            try:
+                return True, re.search(r'\b\d{6}\b', status['values']['0']['text']).group()
+            except:
+                print(status['message']) # Error text
+
+
 def cancel_order(id_order):
     url = f'https://tokoclaude.com/api/cancle-orders/{api}/{id_order}'
     response = requests.get(url)
@@ -463,6 +489,14 @@ def get_balance():
                 access_token = response_data['data']['access_token']
                 return fullname, balance, access_token
 
+    elif providers == 3:
+        while True:
+            balance = sa.getBalance() # {'balance': '100.00'}
+            try:
+                return "unknow", balance['balance'], 0
+            except:
+                print(balance['message']) # Error text
+
 def wait_and_click(driver, css_selector):
     try:
         element = WebDriverWait(driver, 60).until(  # Menunggu elemen sampai muncul (default 10 detik)
@@ -500,21 +534,29 @@ def main():
             layanan_str = "aaa"
         # ortua = str(input("==========================================================\nEmail Ortu: "))
         # try:
-        if pilih == 0 and providers != 2:
+        if pilih == 0 and providers == 3:
+            order_id, phone_number = get_phone("0", "Old")
+            otp_code = None
+            stat, otp_code_2 = get_inbox(order_id,0)
+        elif pilih == 0 and providers != 2:
             order_id = str(input("order_id : "))
             phone_number = str(input("phone_number : "))
             otp_code = None
             otp_code_2 = None
-        elif pilih == 1:
-            order_id = None
-            phone_number = None
-            otp_code = None
-            otp_code_2 = None
-        else:
+        elif pilih == 0 and providers == 2:
             order_id = None
             phone_number = str(input("phone_number : "))
             otp_code = None
             otp_code_2 = None
+        else:
+            order_id = None
+            phone_number = None
+            otp_code = None
+            otp_code_2 = None
+        if pilih == 0:
+            print(f"phone: {phone_number}")
+            print(f"order id: {order_id}")
+            print(f"otp_code_2: {otp_code_2}")
         inc = 0
         while True:
             try:
@@ -529,7 +571,7 @@ def main():
                 print(fake_iphone_user_agent)
                 driver = Driver(
                     uc=True,
-                    proxy="socks5://x0nlmff.localto.net:1359",
+                    # proxy="socks5://x0nlmff.localto.net:6944",
                     agent=fake_iphone_user_agent
                     # extension_dir="proxy_auth_extension"
                 )
@@ -566,7 +608,7 @@ def main():
                 WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, '#birthdaygenderNext > div > button'))
                 ).click()
-                time.sleep(5)
+                time.sleep(3)
                 email_ortu = f"{fake.first_name()}{fake.last_name()}{str(random.randint(1, 10000000))}"
                 print(f"email: {email_ortu}@gmail.com")
                 try:
@@ -667,13 +709,12 @@ def main():
                         inc += 1
                     except:
                         ksoo = 0 
-                time.sleep(3)
                 driver.get("https://myaccount.google.com/signinoptions/recoveryoptions?opendialog=collectphone")
                 time.sleep(5)
                 if phone_number == None:
                     order_id, phone_number = get_phone(token,layanan_str)
                 wait_and_send(driver, "#c6", phone_number)
-                time.sleep(1)
+                time.sleep(3)
                 WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.VfPpkd-Sx9Kwc.cC1eCc.UDxLd.PzCPDd.iteLLc.VfPpkd-Sx9Kwc-OWXEXe-FNFY6c > div.VfPpkd-wzTsW > div > div.VfPpkd-T0kwCb > div > div > button'))).click()
                 time.sleep(3)
                 
@@ -703,7 +744,7 @@ def main():
                         select = Select(dropdown_element)
                         select.select_by_value(random_value)
                         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#birthdaygenderNext > div > button'))).click()
-                        time.sleep(5)
+                        time.sleep(2)
                         try:
                             email = f"{fake.first_name()}{fake.last_name()}{str(random.randint(1, 10000000))}"
                             print(f"{email}@gmail.com")
@@ -715,11 +756,11 @@ def main():
                                 wait_and_click(driver, "#next > div > button")
                             except:
                                 xops = "ffggg"
-                        time.sleep(5)
+                        time.sleep(2)
                         wait_and_send(driver, '#password > div.aCsJod.oJeWuf > div > div.Xb9hP > input', '123456tujuh')
                         link_anak = driver.current_url
                         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#createpasswordNext > div > button'))).click()
-                        time.sleep(5)
+                        time.sleep(2)
                         while True:
                             try:
                                 WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#phoneNumberId'))).clear()
@@ -776,9 +817,9 @@ def main():
                                         break
                                     try:
                                         wait_and_send(driver, '#code', otp_code)
-                                        time.sleep(2)
+                                        time.sleep(1)
                                         wait_and_click(driver, '#next > div > button')
-                                        time.sleep(3)
+                                        time.sleep(2)
                                         try:
                                             time.sleep(1)
                                             wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section:nth-child(7) > div > div > div:nth-child(2) > div.ci67pc > div")
@@ -826,7 +867,7 @@ def main():
                                                 wait_and_send(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section > div > div > div > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input", otp_code_2)
                                                 time.sleep(1)
                                                 wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.zQJV3 > div > div.qhFLie > div > div > button")
-                                                time.sleep(10)
+                                                time.sleep(8)
                                                 inc = inc + 1
                                                 
 
@@ -847,7 +888,6 @@ def main():
                                 if providers != 0 and providers != 2:
                                     status_otp, otp_code = get_inbox(order_id,token)
                                 try:
-                                    time.sleep(3)
                                     wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section:nth-child(7) > div > div > div:nth-child(2) > div.ci67pc > div")
                                     wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section:nth-child(7) > div > div > div:nth-child(1) > div.ci67pc > div")
                                     wait_and_click(driver, "#dnpPage-next > div > button")
@@ -856,7 +896,7 @@ def main():
                                     slos = 0
                                 try:
                                     wait_and_send(driver, "#password > div.aCsJod.oJeWuf > div > div.Xb9hP > input", "123456tujuh")
-                                    time.sleep(3)
+                                    time.sleep(1)
                                     wait_and_click(driver, "#passwordNext > div > button")
                                     time.sleep(3)
                                     wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.zQJV3 > div > div > div > div > button")
@@ -894,7 +934,7 @@ def main():
                                         wait_and_send(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section > div > div > div > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input", otp_code_2)
                                         time.sleep(1)
                                         wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.zQJV3 > div > div.qhFLie > div > div > button")
-                                        time.sleep(10)
+                                        time.sleep(8)
                                         inc = inc + 1
                                         
 
