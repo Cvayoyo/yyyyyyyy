@@ -19,24 +19,6 @@ from smsactivate.api import SMSActivateAPI
 with open('data/api.txt', 'r') as file:
     lines = file.readlines()
 choser = int(1)
-providers = int(input("==========================================================\n0 = Siotp\n1 = tokoclaude\n2 = wnrstore\n3 = smsactive\nPilih: "))
-if providers == 0:
-    api = lines[0].strip()
-elif providers == 1:
-    api = lines[1].strip()
-elif providers == 2:
-    api = lines[2].strip()
-    email_wnr = lines[3].strip()
-    password_wnr = lines[4].strip()
-elif providers == 3:
-    api = lines[5].strip()
-    sa = SMSActivateAPI(api)
-    sa.debug_mode = False
-headers = {
-    'accept': 'application/json',
-    'Content-Type': 'application/json'
-}
-
 fake = Faker()
 iphone_user_agents = [
     "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
@@ -280,10 +262,16 @@ def change_status(status_id, order_idst):
             response = requests.post(url, headers=headers, json=params)
             response_data = response.json()
             return True
+    elif providers == 4:
+        while True:
+            x = requests.get(f"https://smshub.org/stubs/handler_api.php?api_key={api}&action=setStatus&status=3&id={order_idst}")
+            if x.status_code == 200:
+                print(x.text)
+                return True
 
 def get_phone(tokens, layanans):
     if providers == 1:
-        while True:
+        for i in range(100):
             response = requests.get(f'https://tokoclaude.com/api/set-orders/{api}/965', timeout=20)
             if response.status_code == 201:
                 data = response.json()
@@ -296,8 +284,10 @@ def get_phone(tokens, layanans):
                 else:
                     print(data)
             time.sleep(2)
+        print("Change Your Provider / Layanan -_-")
+        sys.exit()
     elif providers == 0:
-        while True:
+        for i in range(100):
             response = requests.get(f'https://api.siotp.com/api/order?apikey={api}&service=2&operator={layanans}&country=1', timeout=20)
             if response.status_code == 200:
                 data = response.json()
@@ -310,8 +300,10 @@ def get_phone(tokens, layanans):
             else:
                 print(f"Failed to get data. Status code: {response.status_code}")
             time.sleep(2)
+        print("Change Your Provider / Layanan -_-")
+        sys.exit()
     elif providers == 2:
-        while True:
+        for i in range(100):
             url = 'https://wnrstore.com/api/v1/transaction/add'
             headers = {
                 'Authorization': f'Bearer {tokens}'
@@ -329,8 +321,10 @@ def get_phone(tokens, layanans):
                 data = response_data['data']
                 return 0, data
             time.sleep(2)
+        print("Change Your Provider / Layanan -_-")
+        sys.exit()
     elif providers == 3:
-        while True:
+        for i in range(100):
             if layanans == "Old":
                 rent = sa.getRentList()
                 try:
@@ -338,12 +332,62 @@ def get_phone(tokens, layanans):
                 except:
                     print(rent['message'])
             else:
-                rent = sa.getRentNumber(service='go', time=4, operator='any', country=6)
+                rent = sa.getRentNumber(service='go', time=4, operator=layanans, country=6)
                 try:
                     return rent['phone']['id'] , rent['phone']['number']
                 except:
                     print(rent['message'])
-                
+        print("Change Your Provider / Layanan -_-")
+        sys.exit()
+    elif providers == 4:
+        for ipo in range(100):
+            if layanans == "Old":
+                x = requests.get(f"https://smshub.org/stubs/handler_api.php?api_key={api}&action=getCurrentActivations")
+                data = x.json()
+                data_list = []
+                if data["status"] == "success":
+                    for item in data["array"]:
+                        data_list.append({
+                            "id": item["id"],
+                            "phone": item["phone"],
+                            "status": item["status"]
+                        })
+                    print("==========================================================")
+                    print("Daftar Order:")
+                    for i, entry in enumerate(data_list):
+                        print(f"{i + 1}. ID: {entry['id']}, Phone: {entry['phone']}, Status: {entry['status']}")
+                    for inlop in range(3):
+                        try:
+                            print("==========================================================")
+                            choice = int(input("Pilih nomor yang ingin pilih: ")) - 1
+                            if 0 <= choice < len(data_list):
+                                selected_data = data_list[choice]
+                                print("==========================================================")
+                                print(f"Data yang dipilih:")
+                                return selected_data['id'], selected_data['phone'], selected_data['status']
+                            else:
+                                print("Pilihan tidak valid.")
+                        except:
+                            print("Input harus berupa angka.")
+                    print("Change Your Provider / Layanan -_-")
+                    sys.exit()
+                else:
+                    print("Data Order Not Found!!!")
+                    time.sleep(3)
+                    sys.exit()
+            else:
+                # x = requests.get(f"https://smshub.org/stubs/handler_api.php?api_key={api}&action=getNumber&service=go&operator={layanans}&country=6&&maxPrice=0.13&currency=643")
+                x = requests.get(f"https://smshub.org/stubs/handler_api.php?api_key={api}&action=getNumber&service=go&operator={layanans}&country=6")
+                data = x.text
+                if x.status_code == 200 and data != "NO_NUMBERS":
+                    order_id = f"{data.split(":")[1]}"
+                    num = f"{data.split(":")[2]}"
+                    return order_id , num
+                else:
+                    print("Empty Number Change Your Layanan")
+        print("Change Your Provider / Layanan -_-")
+        sys.exit()
+
 def get_inbox(id_order, tokens):
     if providers == 1:
         url = f'https://tokoclaude.com/api/get-orders/{api}/{id_order}'
@@ -430,19 +474,45 @@ def get_inbox(id_order, tokens):
                 print("Request gagal")
 
     elif providers == 3:
+        start_time = time.time()
+        timeout_duration = 2 * 60
         while True:
+            elapsed_time = time.time() - start_time
+            if elapsed_time > timeout_duration:
+                print("Timeout reached. No SMS received within 2 minutes.")
+                return False, 0
             status = sa.getRentStatus(id_order)
             try:
                 return True, re.search(r'\b\d{6}\b', status['values']['0']['text']).group()
             except:
                 print(status['message']) # Error text
 
+    elif providers == 4:
+        start_time = time.time()
+        timeout_duration = 2 * 60
+        while True:
+            elapsed_time = time.time() - start_time
+            if elapsed_time > timeout_duration:
+                print("Timeout reached. No SMS received within 2 minutes.")
+                return False, 0
+            x = requests.get(f"https://smshub.org/stubs/handler_api.php?api_key={api}&action=getStatus&id={id_order}")
+            data = x.text
+            if x.status_code == 200:
+                if data != "STATUS_WAIT_CODE":
+                    otp_data = data.split(":")[1]
+                    change_status(0,id_order)
+                    return True, otp_data
+
 
 def cancel_order(id_order):
-    url = f'https://tokoclaude.com/api/cancle-orders/{api}/{id_order}'
-    response = requests.get(url)
-    data = response.json()
-    return data
+    if providers == 1:
+        url = f'https://tokoclaude.com/api/cancle-orders/{api}/{id_order}'
+        response = requests.get(url)
+        data = response.json()
+        return data
+    elif providers == 4:
+        x = requests.get(f"https://smshub.org/stubs/handler_api.php?api_key={api}&action=setStatus&status=8&id={id_order}")
+        return x.text
 
 def get_balance():
     if providers == 1:
@@ -496,10 +566,16 @@ def get_balance():
                 return "unknow", balance['balance'], 0
             except:
                 print(balance['message']) # Error text
+    elif providers == 4:
+        while True:
+            x = requests.get(f"https://smshub.org/stubs/handler_api.php?api_key={api}&action=getBalance")
+            if x.status_code == 200:
+                balance = f"${x.text.split(":")[1]}"
+                return "unknow", balance, 0
 
 def wait_and_click(driver, css_selector):
     try:
-        element = WebDriverWait(driver, 60).until(  # Menunggu elemen sampai muncul (default 10 detik)
+        element = WebDriverWait(driver, 20).until(  # Menunggu elemen sampai muncul (default 10 detik)
             EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector))
         )
         element.click()  # Klik elemen setelah valid
@@ -508,7 +584,7 @@ def wait_and_click(driver, css_selector):
 
 def wait_and_send(driver, css_selector, action):
     try:
-        element = WebDriverWait(driver, 60).until(  # Menunggu elemen sampai muncul (default 10 detik)
+        element = WebDriverWait(driver, 20).until(  # Menunggu elemen sampai muncul (default 10 detik)
             EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector))
         )
         element.send_keys(action)  # Kirim input setelah valid
@@ -518,16 +594,17 @@ def wait_and_send(driver, css_selector, action):
 def main():
     while True:
         pilih = int(input("==========================================================\n0 = nomer lama\n1 = nomer baru\nPilih: "))
-        if providers == 0 or providers == 2:
+        if providers == 0 or providers == 2 or providers == 3 or providers == 4:
             layanan_mapping = {
                 0: "axis",
                 1: "indosat",
                 2: "three",
                 3: "telkomsel",
-                4: "any"
+                4: "smartfren",
+                5: "any"
             }
 
-            layanan = int(input("==========================================================\n0 = axis\n1 = Indosat\n2 = Three\n3 = Telkomsel\n4 = Random\nPilih: "))
+            layanan = int(input("==========================================================\n0 = axis\n1 = Indosat\n2 = Three\n3 = Telkomsel\n4 = Smartfren\n5 = Random\nPilih: "))
             layanan_str = layanan_mapping.get(layanan, "Layanan tidak valid")
             print("Layanan yang dipilih:", layanan_str)
         else:
@@ -538,6 +615,13 @@ def main():
             order_id, phone_number = get_phone("0", "Old")
             otp_code = None
             stat, otp_code_2 = get_inbox(order_id,0)
+        if pilih == 0 and providers == 4:
+            order_id, phone_number,status_smshub = get_phone("0", "Old")
+            otp_code = None
+            if (status_smshub == 2 and status_smshub == "6") or (status_smshub == 2 and status_smshub == 6):
+                stat, otp_code_2 = get_inbox(order_id,0)
+            else:
+                otp_code_2 = None
         elif pilih == 0 and providers != 2:
             order_id = str(input("order_id : "))
             phone_number = str(input("phone_number : "))
@@ -566,12 +650,19 @@ def main():
                 print(f"Balance  : {saldo}")
                 print(f"Token    : {token}")
                 print("==========================================================")
+                if phone_number is None:
+                    print("Order Phone Number ....")
+                    order_id, phone_number = get_phone(token, layanan_str)
+                    print(f"phone: {phone_number}")
+                    print(f"order id: {order_id}")
+                    print(f"Otp Before: {otp_code_2}")
+
                 print(f"\n=====================Create Email ( Pribadi )=====================")
                 fake_iphone_user_agent = random.choice(iphone_user_agents)
                 print(fake_iphone_user_agent)
                 driver = Driver(
                     uc=True,
-                    # proxy="socks5://x0nlmff.localto.net:6944",
+                    proxy="socks5://x0nlmff.localto.net:8393",
                     agent=fake_iphone_user_agent
                     # extension_dir="proxy_auth_extension"
                 )
@@ -657,14 +748,13 @@ def main():
                         ).click()
                         time.sleep(5)
                         try:
-                            WebDriverWait(driver, 15).until(
+                            WebDriverWait(driver, 20).until(
                                 EC.presence_of_element_located(
                                     (By.CSS_SELECTOR, '#yDmH0d > c-wiz > div > div.UXFQgc > div > div > div.AcKKx > form > span > section > div > div > div.sg1AX.Jj6Lae > div > div.MK96uf > div.hLRWIe')
                                 )
                             )
                             print("nomer tidak valid")
-                            time.sleep(5)
-                            if providers == 1:
+                            if providers == 1 or providers == 4:
                                 status_cancel = cancel_order(order_id)
                                 print(status_cancel)
                             order_id, phone_number = get_phone(token, layanan_str)
@@ -678,11 +768,11 @@ def main():
                     if otp_code_2 == otp_code:
                         status_otp, otp_code = get_inbox(order_id, token)
                     else:
-                        if providers != 0 and providers != 2:
+                        if providers != 0 and providers != 2 and providers != 4:
                             status_otp, otp_code_2 = get_inbox(order_id,token)
                         break
                 if not status_otp:
-                    if providers == 1:
+                    if providers == 1 or providers == 4:
                         status_cancel = cancel_order(order_id)
                         print(status_cancel)
                     elif providers == 0:
@@ -776,8 +866,7 @@ def main():
                                 try:
                                     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section > div > div > div.bAnubd.Jj6Lae > div > div.gFxJE > div.jPtpFe')))
                                     print("nomer tidak valid")
-                                    time.sleep(5)
-                                    if providers == 1:
+                                    if providers == 1 or providers == 4:
                                         status_cancel = cancel_order(order_id)
                                         print(status_cancel)
                                     driver.get("https://myaccount.google.com/signinoptions/recoveryoptions?opendialog=collectphone")
@@ -800,7 +889,7 @@ def main():
                                         else :
                                             break 
                                     if not status_otp:
-                                        if providers == 1:
+                                        if providers == 1 or providers == 4:
                                             status_cancel = cancel_order(order_id)
                                             print(status_cancel)
                                         elif providers == 0:
@@ -849,7 +938,7 @@ def main():
                                                     else :
                                                         break 
                                                 if not status_otp:
-                                                    if providers == 1:
+                                                    if providers == 1 or providers == 4:
                                                         status_cancel = cancel_order(order_id)
                                                         print(status_cancel)
                                                     elif providers == 0:
@@ -885,7 +974,7 @@ def main():
                                 break
                             except:
                                 print("Number not found")
-                                if providers != 0 and providers != 2:
+                                if providers != 0 and providers != 2 and providers != 4:
                                     status_otp, otp_code = get_inbox(order_id,token)
                                 try:
                                     wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section:nth-child(7) > div > div > div:nth-child(2) > div.ci67pc > div")
@@ -915,7 +1004,7 @@ def main():
                                             else :
                                                 break 
                                         if not status_otp:
-                                            if providers == 1:
+                                            if providers == 1 or providers == 4:
                                                 status_cancel = cancel_order(order_id)
                                                 print(status_cancel)
                                             elif providers == 0:
@@ -956,26 +1045,50 @@ def main():
             except:
                 driver.quit()
                 print("Try Reopen Chrome...")
-
+os.system('cls')
 while True:
     if choser == 1 or choser == "1":
-        email_ortu_ret = main()
-    href_links = []
-    mail_list = []
-    driver = Driver(uc=True)
-    if login(email_ortu_ret, "123456tujuh"):
-        time.sleep(1)
-        prom()
-        time.sleep(2)
-        # mail_reco = recovery_email()
-        family()
-        for i in range(len(mail_list)):
-            with open('result_anak.txt', 'a') as result_file:
-                result_file.write(f"{mail_list[i]}|{email_ortu_ret}@gmail.com\n")
-        with open('result_ortu.txt', 'a') as result_file:
-            result_file.write(f"{email_ortu_ret}@gmail.com|123456tujuh\n")
-        change_password()
-        time.sleep(2)
-        loqout()
-        time.sleep(2)
-        driver.quit()
+        providers = int(input("==========================================================\n0. Siotp\n1. tokoclaude\n2. wnrstore\n3. smsactive\n4. smshub\nPilih: "))
+        if providers == 0:
+            api = lines[0].strip()
+        elif providers == 1:
+            api = lines[1].strip()
+        elif providers == 2:
+            api = lines[2].strip()
+            email_wnr = lines[3].strip()
+            password_wnr = lines[4].strip()
+        elif providers == 3:
+            api = lines[5].strip()
+            sa = SMSActivateAPI(api)
+            sa.debug_mode = False
+        elif providers == 4:
+            api = lines[6].strip()
+        headers = {
+            'accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+        try:
+            email_ortu_ret = main()
+            href_links = []
+            mail_list = []
+            driver = Driver(uc=True)
+            if login(email_ortu_ret, "123456tujuh"):
+                time.sleep(1)
+                prom()
+                time.sleep(2)
+                family()
+                for i in range(len(mail_list)):
+                    with open('result_anak.txt', 'a') as result_file:
+                        result_file.write(f"{mail_list[i]}|{email_ortu_ret}@gmail.com\n")
+                with open('result_ortu.txt', 'a') as result_file:
+                    result_file.write(f"{email_ortu_ret}@gmail.com|123456tujuh\n")
+                change_password()
+                time.sleep(2)
+                loqout()
+                time.sleep(2)
+                driver.quit()
+        except:
+            os.system('cls')
+            print("==========================================================")
+            print("Change Your Provider / Layanan -_-")
+            jsk = 0    
