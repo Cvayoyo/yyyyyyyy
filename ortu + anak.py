@@ -680,8 +680,10 @@ def main():
                     wait_and_click(driver, '#yDmH0d > c-wiz > div > div.JYXaTc > div > div.FO2vFd > div > div > div:nth-child(2) > div > ul > li:nth-child(2)')
                 except:
                     slsloo = 0
-                wait_and_send(driver, '#firstName', fake.first_name())
-                wait_and_send(driver, '#lastName', fake.last_name())
+                firs = fake.first_name()
+                last = fake.last_name()
+                wait_and_send(driver, '#firstName', firs)
+                wait_and_send(driver, '#lastName', last)
                 wait_and_click(driver, '#collectNameNext > div > button')
                 wait_and_send(driver, '#day', random.randint(1, 9))
                 dropdown_element = driver.find_element(By.ID, 'month')
@@ -700,7 +702,7 @@ def main():
                     EC.presence_of_element_located((By.CSS_SELECTOR, '#birthdaygenderNext > div > button'))
                 ).click()
                 time.sleep(3)
-                email_ortu = f"{fake.first_name()}{fake.last_name()}{str(random.randint(1, 10000000))}"
+                email_ortu = f"{firs}{last}{str(random.randint(1, 100000))}"
                 print(f"email: {email_ortu}@gmail.com")
                 try:
                     WebDriverWait(driver, 5).until(
@@ -828,7 +830,7 @@ def main():
                         select = Select(dropdown_element)
                         select.select_by_value(random_value)
 
-                        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#year'))).send_keys("2019")
+                        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#year'))).send_keys("2015")
                         dropdown_element = driver.find_element(By.ID, 'gender')
                         random_value = str(random.randint(1, 2))
                         select = Select(dropdown_element)
@@ -973,7 +975,7 @@ def main():
                                         input("Done")
                                 break
                             except:
-                                print("Number not found")
+                                print("Bypass Phone!!!")
                                 if providers != 0 and providers != 2 and providers != 4:
                                     status_otp, otp_code = get_inbox(order_id,token)
                                 try:
