@@ -165,6 +165,7 @@ def login(email,password):
         WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.NAME, 'identifier'))).send_keys(email)
         print("Email : "+email)
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#identifierNext > div > button'))).click()
+        time.sleep(1)
         try:
             WebDriverWait(driver, 7).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#password > div.aCsJod.oJeWuf > div > div.Xb9hP > input'))).send_keys(password)
             print("Password : "+password+"\n===================================")
@@ -176,6 +177,51 @@ def login(email,password):
             if attempt > max_retries:
                 print("Max login attempts reached. Moving to the next email.")
                 return False
+
+def auth_2fa():
+    print("Add Auth 2FA")
+    while True:
+        try:
+            print("Retive Secrect Code...")
+            driver.get('https://myaccount.google.com/two-step-verification/authenticator')
+            try:
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > c-wiz > div > div:nth-child(2) > div:nth-child(2) > c-wiz > div > div > div.ciRgbc.Ru61We > div.Mwd2Jc > div > div > div > button'))).click()
+            except:
+                print("Auth Already Add, Trying Update Auth")
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > c-wiz > div > div:nth-child(2) > div:nth-child(2) > c-wiz > div > div > div.VfPpkd-WsjYwc.VfPpkd-WsjYwc-OWXEXe-INsAgc.KC1dQ.Usd1Ac.AaN0Dd.F2KCCe.NkyfNe.HYI7Re.yOXhRb.E2bpG.injfOc > div > div > ul > li > div > div.kvjuQc.biRLo > div > button'))).click()
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#yDmH0d > div.uW2Fw-Sx9Kwc.uW2Fw-Sx9Kwc-OWXEXe-n2to0e.iteLLc.uW2Fw-Sx9Kwc-OWXEXe-FNFY6c > div.uW2Fw-wzTsW > div > div.uW2Fw-T0kwCb > div:nth-child(2) > button"))).click()
+
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.oDVwOd.PHZhJd.iWO5td > div > div.GheHHf.GiAE0b.KNyhq.PjYkrd.iWO5td > span > div > div > div > div:nth-child(2) > center > div > div > button'))).click()
+            secret_code = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.oDVwOd.PHZhJd.iWO5td > div > div.GheHHf.GiAE0b.KNyhq.PjYkrd.iWO5td > span > div > div > ol > li:nth-child(2) > div > strong'))).text
+            secret_code = re.sub(r'\s+', '', secret_code)
+            if secret_code:
+                print("Secrect Code : "+secret_code)
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.oDVwOd.PHZhJd.iWO5td > div > div.GheHHf.GiAE0b.KNyhq.PjYkrd.iWO5td > div.sRKBBe > div > div:nth-child(2) > div:nth-child(2) > button'))).click()
+                print("Retive OTP Auth...")
+                driver.execute_script("window.open('');")
+                driver.switch_to.window(driver.window_handles[1])
+                driver.get('https://totp.danhersam.com/#/'+secret_code)
+                otp_auth = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#token'))).text
+                print("OTP Auth : "+otp_auth)
+                driver.close()
+                driver.switch_to.window(driver.window_handles[0])
+                print("Submit OTP Auth...")
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#c2'))).send_keys(otp_auth)
+                time.sleep(2)
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.oDVwOd.PHZhJd.iWO5td > div > div.GheHHf.GiAE0b.KNyhq.PjYkrd.iWO5td > div.sRKBBe > div > div:nth-child(2) > div:nth-child(3) > button'))).click()
+                # print("Turn ON Auth 2FA")
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#ow8 > div > div > div.btFaIb > div > div.Jcq15c > div > div'))).click()
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > c-wiz > div > div:nth-child(2) > div:nth-child(2) > c-wiz > div > div:nth-child(1) > div.ciRgbc.Ru61We > div.Mwd2Jc > div > div > div > button'))).click()
+                WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.uW2Fw-Sx9Kwc.uW2Fw-Sx9Kwc-OWXEXe-n2to0e.iteLLc.uW2Fw-Sx9Kwc-OWXEXe-FNFY6c > div.uW2Fw-wzTsW > div > div.uW2Fw-T0kwCb > div:nth-child(2) > button'))).click()
+                time.sleep(1)
+                WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.uW2Fw-Sx9Kwc.uW2Fw-Sx9Kwc-OWXEXe-n2to0e.iteLLc.uW2Fw-Sx9Kwc-OWXEXe-FNFY6c > div.uW2Fw-wzTsW > div > div.uW2Fw-T0kwCb > div.qsqhnc > div > button'))).click()
+                time.sleep(1)
+                WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d#yDmH0d > div.uW2Fw-Sx9Kwc.uW2Fw-Sx9Kwc-OWXEXe-n2to0e.iteLLc.uW2Fw-Sx9Kwc-OWXEXe-FNFY6c > div.uW2Fw-wzTsW > div > div.uW2Fw-T0kwCb > div > div > button'))).click()
+                time.sleep(2)
+                break
+        except Exception as e:
+            print("Gagal, Retry...")
+    return secret_code
                 
 def loqout():
     driver.get('https://accounts.google.com/SignOutOptions?hl=en&continue=https://myaccount.google.com/security&ec=GBRAwAE')
@@ -272,7 +318,7 @@ def change_status(status_id, order_idst):
 def get_phone(tokens, layanans):
     if providers == 1:
         for i in range(100):
-            response = requests.get(f'https://tokoclaude.com/api/set-orders/{api}/965', timeout=20)
+            response = requests.get(f'https://tokoclaude.com/api/set-orders/{api}/977', timeout=20)
             if response.status_code == 201:
                 data = response.json()
                 if data.get('success') == True:
@@ -662,7 +708,6 @@ def main():
                 print(fake_iphone_user_agent)
                 driver = Driver(
                     uc=True,
-                    proxy="socks5://x0nlmff.localto.net:8393",
                     agent=fake_iphone_user_agent
                     # extension_dir="proxy_auth_extension"
                 )
@@ -1079,11 +1124,13 @@ while True:
                 prom()
                 time.sleep(2)
                 family()
+                time.sleep(2)
+                sec_code = auth_2fa()
                 for i in range(len(mail_list)):
                     with open('result_anak.txt', 'a') as result_file:
                         result_file.write(f"{mail_list[i]}|{email_ortu_ret}@gmail.com\n")
                 with open('result_ortu.txt', 'a') as result_file:
-                    result_file.write(f"{email_ortu_ret}@gmail.com|123456tujuh\n")
+                    result_file.write(f"{email_ortu_ret}@gmail.com|123456tujuh@|{sec_code}\n")
                 change_password()
                 time.sleep(2)
                 loqout()
