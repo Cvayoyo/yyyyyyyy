@@ -386,7 +386,7 @@ def get_phone(tokens, layanans):
         print("Change Your Provider / Layanan -_-")
         sys.exit()
     elif providers == 4:
-        for ipo in range(100):
+        for ipo in range(1000):
             if layanans == "Old":
                 x = requests.get(f"https://smshub.org/stubs/handler_api.php?api_key={api}&action=getCurrentActivations")
                 data = x.json()
@@ -708,6 +708,7 @@ def main():
                 print(fake_iphone_user_agent)
                 driver = Driver(
                     uc=True,
+                    # proxy="socks5://61mm2hp.localto.net:7695",
                     agent=fake_iphone_user_agent
                     # extension_dir="proxy_auth_extension"
                 )
@@ -850,7 +851,7 @@ def main():
                 time.sleep(5)
                 if phone_number == None:
                     order_id, phone_number = get_phone(token,layanan_str)
-                wait_and_send(driver, "#c6", phone_number)
+                wait_and_send(driver, "#c6", "+"+phone_number)
                 time.sleep(3)
                 WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#yDmH0d > div.VfPpkd-Sx9Kwc.cC1eCc.UDxLd.PzCPDd.iteLLc.VfPpkd-Sx9Kwc-OWXEXe-FNFY6c > div.VfPpkd-wzTsW > div > div.VfPpkd-T0kwCb > div > div > button'))).click()
                 time.sleep(3)
@@ -861,7 +862,7 @@ def main():
                 link_anak ="https://accounts.google.com/embedded/v2/kidsignup/createaccount"
                 while not h_done :
                     try:
-                        if inc == "5" or inc ==  5:
+                        if inc == "6" or inc == 6:
                             break
                         username, saldo, token = get_balance()
                         print(f"\n=====================Create Email ( {inc+1} )=====================")
@@ -1070,7 +1071,7 @@ def main():
                                         wait_and_send(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.WEQkZc > div > form > span > section > div > div > div > div > div.aCsJod.oJeWuf > div > div.Xb9hP > input", otp_code_2)
                                         time.sleep(1)
                                         wait_and_click(driver, "#view_container > div > div > div.pwWryf.bxPAYd > div > div.zQJV3 > div > div.qhFLie > div > div > button")
-                                        time.sleep(8)
+                                        time.sleep(10)
                                         inc = inc + 1
                                         
 
