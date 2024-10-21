@@ -1,0 +1,355 @@
+//+------------------------------------------------------------------+
+//|                                              TelegramAccount.mq5 |
+//|                                      Copyright 2024, Your Name   |
+//|                                       https://www.yourwebsite.com|
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2024, StudentArt, Dev Ayoyo"
+#property link      "https://www.yourwebsite.com"
+#property version   "1.00"
+
+#define TELEGRAM_BOT_TOKEN "6518559449:AAF7If4YIIRbwK6Fe_HG4hnX_169557e7hc"
+#define TELEGRAM_API_URL "https://api.telegram.org"
+#define TELEGRAM_CHAT_ID "-1002101406442"
+
+// Nama untuk variabel global
+#define GLOBAL_VAR_NAME "LastTelegramMessageID"
+#define GLOBAL_VAR_LAST_TOTAL_ORDERS "LastTotalOrders"
+
+// Interval update dalam detik
+#define UPDATE_INTERVAL 3
+
+// Variabel untuk menyimpan waktu update terakhir
+datetime lastUpdateTime = 0;
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+    // Inisialisasi EA
+    lastUpdateTime = 0; // Reset waktu update terakhir
+    
+    // Inisialisasi total order terakhir
+    int currentTotalOrders = PositionsTotal() + OrdersTotal();
+    GlobalVariableSet(GLOBAL_VAR_LAST_TOTAL_ORDERS, currentTotalOrders);
+    
+    return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+    // Bersihkan saat EA dihentikan
+    GlobalVariableDel(GLOBAL_VAR_NAME);
+    GlobalVariableDel(GLOBAL_VAR_LAST_TOTAL_ORDERS);
+}
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+    // Periksa apakah sudah waktunya untuk update
+    if(TimeCurrent() - lastUpdateTime >= UPDATE_INTERVAL)
+    {
+        SendUpdate();
+        lastUpdateTime = TimeCurrent();
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Fungsi untuk mengirim pembaruan                                  |
+//+------------------------------------------------------------------+
+void SendUpdate()
+{
+    int currentTotalOrders = PositionsTotal() + OrdersTotal();
+    int lastTotalOrders = (int)GlobalVariableGet(GLOBAL_VAR_LAST_TOTAL_ORDERS);
+    
+    string message = "";
+    bool sendNewMessage = false;
+    bool updateRequired = false;
+    
+    // Cek apakah ada perubahan jumlah order
+    if(currentTotalOrders != lastTotalOrders)
+    {
+        if(currentTotalOrders > lastTotalOrders)
+        {
+            message = "Order baru telah ditambahkan!\n\n";
+            sendNewMessage = true;
+        }
+        else if(currentTotalOrders < lastTotalOrders)
+        {
+            if(currentTotalOrders == 0)
+            {
+                message = "Close All China!!!!\n\n";
+            }
+            else
+            {
+                message = "Beberapa order telah ditutup!\n\n";
+            }
+            sendNewMessage = true;
+        }
+    }
+    else if(currentTotalOrders > 0)
+    {
+        // Jika tidak ada perubahan tapi masih ada order, update pesan yang ada
+        updateRequired = true;
+    }
+    
+    // Update total order terakhir
+    GlobalVariableSet(GLOBAL_VAR_LAST_TOTAL_ORDERS, currentTotalOrders);
+    
+    // Jika tidak ada update yang diperlukan, keluar dari fungsi
+    if(!sendNewMessage && !updateRequired)
+    {
+        return;
+    }
+    
+    // Tambahkan informasi akun
+    message += GetAccountInfo();
+    
+    if(TELEGRAM_CHAT_ID != "")
+    {
+        Print("Chat ID ditemukan: ", TELEGRAM_CHAT_ID);
+        
+        bool messageIdExists = GlobalVariableCheck(GLOBAL_VAR_NAME);
+        long storedMessageId = 0;
+        
+        if(messageIdExists)
+        {
+            storedMessageId = (long)GlobalVariableGet(GLOBAL_VAR_NAME);
+        }
+        
+        if(sendNewMessage || storedMessageId <= 0)
+        {
+            // Kirim pesan baru
+            int newMessageId = SendTelegramMessage(TELEGRAM_CHAT_ID, message);
+            if(newMessageId > 0)
+            {
+                GlobalVariableSet(GLOBAL_VAR_NAME, newMessageId);
+                Print("Pesan baru terkirim dengan ID: ", newMessageId);
+            }
+            else
+            {
+                Print("Gagal mengirim pesan baru.");
+            }
+        }
+        else if(updateRequired)
+        {
+            // Update pesan yang ada
+            bool updateSuccess = UpdateTelegramMessage(TELEGRAM_CHAT_ID, (int)storedMessageId, message);
+            if(updateSuccess)
+            {
+                Print("Pesan berhasil diupdate.");
+            }
+            else
+            {
+                Print("Gagal mengupdate pesan. Mengirim pesan baru...");
+                int newMessageId = SendTelegramMessage(TELEGRAM_CHAT_ID, message);
+                if(newMessageId > 0)
+                {
+                    GlobalVariableSet(GLOBAL_VAR_NAME, newMessageId);
+                    Print("Pesan baru terkirim dengan ID: ", newMessageId);
+                }
+                else
+                {
+                    Print("Gagal mengirim pesan baru.");
+                }
+            }
+        }
+    }
+    else
+    {
+        Print("Gagal mendapatkan Chat ID.");
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Fungsi untuk mendapatkan informasi akun dan order                |
+//+------------------------------------------------------------------+
+string GetAccountInfo()
+{
+    int totalPositions = PositionsTotal();
+    int totalOrders = OrdersTotal();
+    
+    string info = "Rincian Posisi Terbuka:\n";
+
+    // Menambahkan rincian setiap posisi terbuka
+    for(int i = 0; i < totalPositions; i++)
+    {
+        ulong ticket = PositionGetTicket(i);
+        if(ticket > 0)
+        {
+            string symbol = PositionGetString(POSITION_SYMBOL);
+            long type = PositionGetInteger(POSITION_TYPE);
+            double volume = PositionGetDouble(POSITION_VOLUME);
+            double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
+            double currentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
+            double positionProfit = PositionGetDouble(POSITION_PROFIT);
+            double sl = PositionGetDouble(POSITION_SL);
+            double tp = PositionGetDouble(POSITION_TP);
+
+            info += StringFormat(
+                "Posisi %d:\n"
+                "  Ticket: %d\n"
+                "  Symbol: %s\n"
+                "  Type: %s\n"
+                "  Volume: %.2f\n"
+                "  Open Price: %.5f\n"
+                "  Current Price: %.5f\n"
+                "  Stop Loss: %.5f\n"
+                "  Take Profit: %.5f\n"
+                "  Profit: %.2f\n\n",
+                i+1, ticket, symbol, (type == POSITION_TYPE_BUY) ? "Buy" : "Sell", 
+                volume, openPrice, currentPrice, sl, tp, positionProfit
+            );
+        }
+    }
+
+    info += "\nRincian Pending Orders:\n";
+
+    // Menambahkan rincian setiap pending order
+    for(int i = 0; i < totalOrders; i++)
+    {
+        ulong ticket = OrderGetTicket(i);
+        if(ticket > 0)
+        {
+            string symbol = OrderGetString(ORDER_SYMBOL);
+            ENUM_ORDER_TYPE type = (ENUM_ORDER_TYPE)OrderGetInteger(ORDER_TYPE);
+            double volume = OrderGetDouble(ORDER_VOLUME_CURRENT);
+            double openPrice = OrderGetDouble(ORDER_PRICE_OPEN);
+            double stopLoss = OrderGetDouble(ORDER_SL);
+            double takeProfit = OrderGetDouble(ORDER_TP);
+
+            info += StringFormat(
+                "Order %d:\n"
+                "  Symbol: %s\n"
+                "  Type: %s\n"
+                "  Volume: %.2f\n"
+                "  Open Price: %.5f\n"
+                "  Stop Loss: %.5f\n"
+                "  Take Profit: %.5f\n\n",
+                i+1, symbol, EnumToString(type), volume, openPrice, stopLoss, takeProfit
+            );
+        }
+    }
+
+    double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+    double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+    double margin = AccountInfoDouble(ACCOUNT_MARGIN);
+    double freeMargin = AccountInfoDouble(ACCOUNT_MARGIN_FREE);
+    double marginLevel = AccountInfoDouble(ACCOUNT_MARGIN_LEVEL);
+    double profit = AccountInfoDouble(ACCOUNT_PROFIT);
+
+    info += StringFormat(
+        "\nInformasi Akun:\n"
+        "Total Posisi Terbuka: %d\n"
+        "Total Pending Orders: %d\n"
+        "Balance: %.2f\n"
+        "Equity: %.2f\n"
+        "Margin: %.2f\n"
+        "Free Margin: %.2f\n"
+        "Margin Level: %.2f%%\n"
+        "Profit: %.2f\n",
+        totalPositions, totalOrders, balance, equity, margin, freeMargin, marginLevel, profit
+    );
+
+    return info;
+}
+
+//+------------------------------------------------------------------+
+//| Fungsi untuk mengirim pesan Telegram                             |
+//+------------------------------------------------------------------+
+int SendTelegramMessage(string chat_id, string message)
+{
+    string url = StringFormat("%s/bot%s/sendMessage", TELEGRAM_API_URL, TELEGRAM_BOT_TOKEN);
+    string params = StringFormat("chat_id=%s&text=%s", chat_id, UrlEncode(message));
+    char post[];
+    char result[];
+    string headers;
+
+    StringToCharArray(params, post);
+
+    int res = WebRequest("POST", url, NULL, NULL, 5000, post, ArraySize(post), result, headers);
+
+    if(res == -1)
+    {
+        Print("Error in WebRequest. Error code: ", GetLastError());
+        return 0;
+    }
+
+    Print("Message sent successfully!");
+    
+    // Parse message_id dari respons JSON
+    string response = CharArrayToString(result);
+    int pos = StringFind(response, "\"message_id\":");
+    if(pos != -1)
+    {
+        string sub = StringSubstr(response, pos + 13);
+        int end = StringFind(sub, ",");
+        if(end != -1)
+        {
+            return (int)StringToInteger(StringSubstr(sub, 0, end));
+        }
+    }
+    
+    return 0;
+}
+
+//+------------------------------------------------------------------+
+//| Fungsi untuk memperbarui pesan Telegram                          |
+//+------------------------------------------------------------------+
+bool UpdateTelegramMessage(string chat_id, int message_id, string new_text)
+{
+    string url = StringFormat("%s/bot%s/editMessageText", TELEGRAM_API_URL, TELEGRAM_BOT_TOKEN);
+    string params = StringFormat("chat_id=%s&message_id=%d&text=%s", chat_id, message_id, UrlEncode(new_text));
+    char post[];
+    char result[];
+    string headers;
+
+    StringToCharArray(params, post);
+
+    int res = WebRequest("POST", url, NULL, NULL, 5000, post, ArraySize(post), result, headers);
+
+    if(res == -1)
+    {
+        Print("Error in WebRequest. Error code: ", GetLastError());
+        return false;
+    }
+
+    string response = CharArrayToString(result);
+    Print("Update Message Response: ", response);
+
+    // Cek apakah respons mengandung "ok":true
+    if(StringFind(response, "\"ok\":true") != -1)
+    {
+        return true;
+    }
+    
+    return false;
+}
+
+//+------------------------------------------------------------------+
+//| Fungsi untuk mengkodekan string untuk URL                        |
+//+------------------------------------------------------------------+
+string UrlEncode(string str)
+{
+    string result = "";
+    int len = StringLen(str);
+    for(int i = 0; i < len; i++)
+    {
+        ushort ch = StringGetCharacter(str, i);
+        if((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') ||
+           ch == '-' || ch == '_' || ch == '.' || ch == '~')
+        {
+            result += ShortToString(ch);
+        }
+        else
+        {
+            result += StringFormat("%%%02X", ch);
+        }
+    }
+    return result;
+}
